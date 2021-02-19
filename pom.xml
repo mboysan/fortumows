@@ -21,13 +21,21 @@
         <cargo.maven.plugin.version>1.9.1</cargo.maven.plugin.version>
         <jacoco.version>0.8.6</jacoco.version>
 
+        <slf4j.version>1.7.30</slf4j.version>
         <jakarta.servletapi.version>5.0.0</jakarta.servletapi.version>
         <junit.jupiter.version>5.7.1</junit.jupiter.version>
+        <mockito.version>1.10.19</mockito.version>
 
         <cargo.containerId>jetty11x</cargo.containerId>
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>jakarta.servlet</groupId>
             <artifactId>jakarta.servlet-api</artifactId>
@@ -40,6 +48,19 @@
             <version>${junit.jupiter.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+            <version>${mockito.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>${slf4j.version}</version>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <build>

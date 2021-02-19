@@ -24,7 +24,7 @@ class SumObserver {
         }
     }
 
-    static class Sum {
+    private static class Sum {
         private Long totalSum = null;
     }
 }

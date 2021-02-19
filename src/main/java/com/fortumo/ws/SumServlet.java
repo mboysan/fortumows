@@ -5,12 +5,16 @@ import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.function.Function;
 
 public class SumServlet extends HttpServlet {
+
+    private static final Logger LOG = LoggerFactory.getLogger(SumServlet.class);
 
     private final Function<String, Long> service;
 
@@ -24,6 +28,7 @@ public class SumServlet extends HttpServlet {
             BufferedReader reader = req.getReader();
             ServletOutputStream os = resp.getOutputStream();
             String body = reader.readLine();
+            LOG.info("recv request={}", body);
             long result = service.apply(body);
             resp.setStatus(200);
             resp.setContentType("text/plain;charset=UTF-8");

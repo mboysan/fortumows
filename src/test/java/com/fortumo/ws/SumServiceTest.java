@@ -1,6 +1,8 @@
 package com.fortumo.ws;
 
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +15,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class SumServiceTest {
 
+    private static final Logger LOG = LoggerFactory.getLogger(SumServiceTest.class);
+
     @Test
     void testAll() throws ExecutionException, InterruptedException {
         // TODO: fix tests
@@ -23,17 +27,22 @@ class SumServiceTest {
 
         long totalExpected = 0;
         List<Future<Long>> futures = new ArrayList<>();
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 20; i++) {
             int finalI = i;
             totalExpected += finalI;
-            futures.add(executor.submit(() -> ss.apply(finalI + "")));
+            futures.add(executor.submit(() -> {
+                Long workerSum = ss.apply(finalI + "");
+                LOG.info("workerSum={}", workerSum);
+                return workerSum;
+            }));
         }
         executor.execute(() -> {
             try {
                 Thread.sleep(1000);
-                System.out.println("awaited and ended total=" + ss.apply("end"));
+                Long actualSum = ss.apply("end");
+                LOG.info("awaited, actualSum={}", actualSum);
             } catch (Exception e) {
-                e.printStackTrace();
+                LOG.error(e.getMessage());
             }
         });
 
