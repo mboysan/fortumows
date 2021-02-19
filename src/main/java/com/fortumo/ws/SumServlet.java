@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.function.Function;
 
@@ -19,19 +20,20 @@ public class SumServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String body = req.getReader().readLine();
-        Long result = service.apply(body);
-        try (ServletOutputStream os = resp.getOutputStream()) {
+        try {
+            BufferedReader reader = req.getReader();
+            ServletOutputStream os = resp.getOutputStream();
+            String body = reader.readLine();
+            long result = service.apply(body);
+            resp.setStatus(200);
+            resp.setContentType("text/plain;charset=UTF-8");
             os.println(result);
+        } catch (NumberFormatException e) {
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "request may only contain string 'end' or number");
+        } catch (ServiceException e) {
+            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+        } catch (Exception e) {
+            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "unexpected server error");
         }
-    }
-
-    @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws IOException {
-
-        response.setContentType("text/plain;charset=UTF-8");
-        var out = response.getOutputStream();
-        out.print("use POST endpoint with a number or 'end' string. see documentation");
     }
 }
