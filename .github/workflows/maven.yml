@@ -22,5 +22,13 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 15
-    - name: Build with Maven
-      run: mvn -B package --file pom.xml
+    - name: Build with Maven and upload coverage
+      env:
+        CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
+      run: |
+        ls -lah
+        mvn clean verify -P coverage
+        ls -lah
+        ls -lah target
+        ls -lah target/site
+        bash <(curl -Ls https://coverage.codacy.com/get.sh) report
