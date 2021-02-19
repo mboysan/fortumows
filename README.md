@@ -1,3 +1,4 @@
+[![maven-all](https://github.com/mboysan/fortumows/workflows/maven-all/badge.svg)](https://github.com/mboysan/fortumows/actions)
 
 TODO: add/polish readme
 
