@@ -27,7 +27,7 @@ jobs:
         CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
       run: |
         ls -lah
-        mvn clean package -Pcoverage
+        mvn clean package -P coverage
         ls -lah
         ls -lah target
         ls -lah target/site
