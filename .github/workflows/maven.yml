@@ -26,5 +26,5 @@ jobs:
       run: mvn clean package -Pcoverage
     - name: Upload coverage report
       run: bash <(curl -Ls https://coverage.codacy.com/get.sh) report
-      env:
-          CODACY_PROJECT_TOKEN: ${{ cicd.CODACY_PROJECT_TOKEN }}
+      #env:
+      #    CODACY_PROJECT_TOKEN: ${{ cicd.CODACY_PROJECT_TOKEN }}
