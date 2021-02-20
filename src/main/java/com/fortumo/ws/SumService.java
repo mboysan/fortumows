@@ -42,8 +42,7 @@ class SumService implements Function<String, Long> {
         Objects.requireNonNull(request, "request must not be null");
         try {
             if (request.equals("end")) {
-                long sum = totalSum.get();
-                totalSum.set(0);
+                long sum = totalSum.getAndSet(0);
                 LOG.info("notifying suppliers with sum={}", sum);
                 callAndRemoveSuppliers(supplier -> supplier.onComplete(sum));   // notifies
                 return sum;
