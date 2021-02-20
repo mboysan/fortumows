@@ -11,13 +11,21 @@ import java.util.function.LongSupplier;
  * This class is thread-safe.
  * <br><br>
  * <b>NB!</b> The object created from this class is not reusable. i.e. none of the methods provided in this class
- * should be called more than once.
+ * should be called more than once. Although there are no checks made to cover such scenarios, it is the caller's
+ * responsibility to comply with this contract.
  */
 public class BlockingLongSupplier implements LongSupplier {
 
     private static final Logger LOG = LoggerFactory.getLogger(BlockingLongSupplier.class);
 
+    /**
+     * The value to supply.
+     */
     private Long value = null;
+
+    /**
+     * The error to report, if any.
+     */
     private Throwable error = null;
 
     /**
@@ -41,14 +49,23 @@ public class BlockingLongSupplier implements LongSupplier {
         return value;
     }
 
+    /**
+     * Notifies the waiting thread that it received the value the supplier is supposed to return.
+     * @param value the value for the supplier to return.
+     */
     synchronized void onComplete(long value) {
         this.value = value;
         notify();
     }
 
+    /**
+     * Notifies the waiting thread that an error has occurred, therefore, signals that there is no need to wait
+     * any longer.
+     * @param t the exception to report.
+     */
     synchronized void onError(Throwable t) {
         LOG.error(t.getMessage());
         error = t;
-        Thread.currentThread().interrupt(); // wake up the thread if it is waiting
+        Thread.currentThread().interrupt(); // interrupt the waiting thread.
     }
 }

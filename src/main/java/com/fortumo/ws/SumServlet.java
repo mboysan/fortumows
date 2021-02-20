@@ -19,6 +19,9 @@ public class SumServlet extends HttpServlet {
 
     private static final Logger LOG = LoggerFactory.getLogger(SumServlet.class);
 
+    /**
+     * The service that processes the received requests.
+     */
     private final Function<String, Long> service;
 
     public SumServlet() {
