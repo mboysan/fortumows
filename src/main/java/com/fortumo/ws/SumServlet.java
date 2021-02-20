@@ -12,6 +12,9 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.function.Function;
 
+import static jakarta.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
+import static jakarta.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+
 public class SumServlet extends HttpServlet {
 
     private static final Logger LOG = LoggerFactory.getLogger(SumServlet.class);
@@ -19,26 +22,35 @@ public class SumServlet extends HttpServlet {
     private final Function<String, Long> service;
 
     public SumServlet() {
-        this.service = new SumService();
+        this.service = createService();
+    }
+
+    Function<String, Long> createService() {
+        return new SumService();
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
-            BufferedReader reader = req.getReader();
-            ServletOutputStream os = resp.getOutputStream();
-            String body = reader.readLine();
+            String body = req.getReader().readLine();
+            validate(body);
             LOG.info("recv request={}", body);
             long result = service.apply(body);
             resp.setStatus(200);
             resp.setContentType("text/plain;charset=UTF-8");
-            os.println(result);
-        } catch (NumberFormatException e) {
-            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "request may only contain string 'end' or number");
+            resp.getOutputStream().println(result);
+        } catch (IllegalArgumentException e) {
+            resp.sendError(SC_BAD_REQUEST, "request may only contain string 'end' or number");
         } catch (ServiceException e) {
-            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+            resp.sendError(SC_INTERNAL_SERVER_ERROR, e.getMessage());
         } catch (Exception e) {
-            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "unexpected server error");
+            resp.sendError(SC_INTERNAL_SERVER_ERROR, "unexpected server error");
+        }
+    }
+
+    void validate(String body) {
+        if (body == null || body.isBlank()) {
+            throw new IllegalArgumentException("body must not be null or blank");
         }
     }
 }
