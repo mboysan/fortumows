@@ -13,10 +13,21 @@ import java.util.function.Supplier;
 import static jakarta.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
 import static jakarta.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.*;
 
 class SumServletTest {
+
+    /**
+     * We will be mocking the {@link SumServlet#createService()} method throughout the tests, but we need to make
+     * sure the servlet creates the appropriate service in reality.
+     */
+    @Test
+    void testServiceClassInstance() {
+        SumServlet servlet = new SumServlet();
+        assertTrue(servlet.createService() instanceof SumService);
+    }
 
     /**
      * tests when request object is null then, an error is sent.
@@ -98,6 +109,8 @@ class SumServletTest {
     }
 
     /**
+     * Creates the {@link SumServlet} to test. A service is injected that returns an arbitrary number when its apply
+     * method is called.
      * @return the servlet to test.
      */
     SumServlet servlet() {
@@ -112,9 +125,11 @@ class SumServletTest {
         return new SumServlet() {
             @Override
             Function<String, Long> createService() {
-                SumService serviceMock = mock(SumService.class);
+                Function<String, Long> serviceMock = mock(Function.class);
                 if (serviceExceptionSupplier != null) {
                     when(serviceMock.apply(anyString())).thenThrow(serviceExceptionSupplier.get());
+                } else {
+                    when(serviceMock.apply(anyString())).thenReturn(10L);
                 }
                 return serviceMock;
             }
