@@ -2,7 +2,7 @@ package com.fortumo.ws;
 
 /**
  * A thread-safe monitor interface that wraps the <tt>wait</tt> and <tt>notify</tt> calls to allow for fine
- * grained testing.
+ * grained testing and abstracting away the error handling of such calls.
  */
 public interface IMonitor {
 

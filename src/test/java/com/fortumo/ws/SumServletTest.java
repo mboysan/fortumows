@@ -67,16 +67,6 @@ class SumServletTest {
     }
 
     /**
-     * tests when service throws a {@link ServiceException}, then an error is sent.
-     */
-    @Test
-    void whenServiceThrowsServiceException_thenSendErrorCalled() throws IOException {
-        HttpServletResponse respMock = response();
-        servlet(() -> new ServiceException(null)).doPost(request(() -> "1"), respMock);
-        verifySendErrorCalled(respMock, SC_INTERNAL_SERVER_ERROR);
-    }
-
-    /**
      * tests when service throws any unexpected exception, then an error is sent.
      */
     @Test

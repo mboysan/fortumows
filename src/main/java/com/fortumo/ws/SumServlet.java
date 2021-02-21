@@ -48,9 +48,6 @@ public class SumServlet extends HttpServlet {
         } catch (IllegalArgumentException e) {
             LOG.error(e.getMessage());
             resp.sendError(SC_BAD_REQUEST, "request may only contain string 'end' or number");
-        } catch (ServiceException e) {
-            LOG.error(e.getMessage());
-            resp.sendError(SC_INTERNAL_SERVER_ERROR, e.getMessage());
         } catch (Exception e) {
             LOG.error(e.getMessage());
             resp.sendError(SC_INTERNAL_SERVER_ERROR, "unexpected server error");

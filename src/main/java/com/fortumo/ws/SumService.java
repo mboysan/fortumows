@@ -3,62 +3,68 @@ package com.fortumo.ws;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.atomic.AtomicLong;
-
 /**
  * The service that collects and sums up the numbers (handled by {@link #doAdd(long)}) received from the clients and
  * waits until one of the client sends the 'end' signal (handled by {@link #doEnd()}).
- * <br><br>
- * Implementation Notes: <br>
- * In most cases, the clients which called {@link #doAdd(long)} shall block until {@link #doEnd()} method is called
- * and the latest value of the {@link #totalSum} is reflected to all waiting threads.
- * In rare cases however, following scenario might happen: <br>
- * Assume there are two threads (t1, t2) and following executions happen one after the other:
- * <ol>
- *     <li>t1 passed point [3] and totalSum is set to 0</li>
- *     <li>t2 passes point [1] and gets currentSum as zero + number</li>
- *     <li>t1 acts fast and reaches [4] before t1 reaches [2]. onComplete() is called before getAsLong().</li>
- *     <li>t2 returns immediately with previous totalSum.</li>
- *     <li>t1 returns as well with previous totalSum.</li>
- * </ol>
- * In this case, number at point [1] is ignored and a separate {@link #doEnd()} call is needed to get the value
- * supplied at that point.
- * TODO: evolve the current implementation to cover the scenario described above.
+ * Note that, objects created from this class are re-usable. This class is thread-safe.
  */
-class SumService {
+class SumService implements IMonitor {
 
     private static final Logger LOG = LoggerFactory.getLogger(SumService.class);
 
     /**
      * The sum of all the numbers received from the clients.
      */
-    private final AtomicLong totalSum = new AtomicLong(0);
+    private long totalSum = 0;
 
     /**
-     * Supplier acting like a barrier between different threads.
+     * the number of threads that called the {@link #doAdd(long)} method.
      */
-    private final BlockingLongSupplier blockingLongSupplier = new BlockingLongSupplier();
+    private int entries = 0;
+
+    /**
+     * A round is defined as all the {@link #doAdd(long)} calls before a thread calls the {@link #doEnd()}.
+     * If false, then a round is currently active and any thread that called the {@link #doAdd(long)} has to
+     * wait for notification. This variable is used to protect against spurious wake-ups.
+     */
+    private boolean roundComplete = false;
 
     /**
      * Adds the provided <tt>number</tt> to {@link #totalSum} and waits for {@link #doEnd()} call.
      * @param number the number to add.
      * @return the {@link #totalSum}.
-     * @throws ServiceException in case there is any error wih the created {@link BlockingLongSupplier}.
      */
-    long doAdd(long number) throws ServiceException {
-        long currentSum = totalSum.addAndGet(number);   // [1]
-        LOG.info("added new value={}, currentSum={}, waiting...", number, currentSum);
-        return blockingLongSupplier.getAsLong(); // [2] - blocks
+    synchronized long doAdd(long number) {
+        ++entries;
+        try {
+            totalSum += number;
+            LOG.info("adding number={}, currentSum={}", number, totalSum);
+            while (!roundComplete) {
+                doWait();
+            }
+            return totalSum;
+        } finally {
+            if (--entries == 0) {
+                doNotify(); // notify the doEnd thread.
+            }
+        }
     }
 
     /**
      * Notifies all the waiting clients that the 'end' signal is received and then sets the {@link #totalSum} to zero.
+     * Also waits until all threads that called the {@link #doAdd(long)} exited first.
      * @return the {@link #totalSum}.
      */
-    long doEnd() throws ServiceException {
-        long sum = totalSum.getAndSet(0);   // [3]
-        LOG.info("notifying suppliers with sum={}", sum);
-        blockingLongSupplier.onComplete(sum);   // [4] - notify and wait others to collect
+    synchronized long doEnd() {
+        long sum = totalSum;
+        LOG.info("notifying all with sum={}", totalSum);
+        roundComplete = true;
+        doNotifyAll();
+        while (entries > 0) {
+            doWait();
+        }
+        roundComplete = false;  // starting a new round.
+        totalSum = 0;
         return sum;
     }
 }
