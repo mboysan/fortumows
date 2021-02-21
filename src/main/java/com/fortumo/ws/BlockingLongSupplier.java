@@ -30,6 +30,8 @@ public class BlockingLongSupplier implements LongSupplier, IMonitor {
      */
     private Throwable error = null;
 
+    private int entries;
+
     /**
      * Returns the {@link #value} provided by another thread that used the {@link #onComplete(long)} method.
      * If {@link #onComplete(long)} or {@link #onError(Throwable)} method is called before this method, this method
@@ -38,13 +40,22 @@ public class BlockingLongSupplier implements LongSupplier, IMonitor {
      */
     @Override
     public synchronized long getAsLong() {
-        if (error != null) {
-            throw new RuntimeException("onError called before this method.", error);
+        ++entries;
+        try {
+            while (value == null && error == null) {
+                doWait();
+            }
+            if (error != null) {
+                throw new RuntimeException("onError called before this method.", error);
+            }
+            return value;
+        } finally {
+            if (--entries == 0) {
+                error = null;
+                value = null;
+                doNotify();
+            }
         }
-        while (value == null) {
-            doWait();
-        }
-        return value;
     }
 
     /**
@@ -54,6 +65,9 @@ public class BlockingLongSupplier implements LongSupplier, IMonitor {
     synchronized void onComplete(long value) {
         this.value = value;
         doNotifyAll();
+        while (entries > 0) {
+            doWait();
+        }
     }
 
     /**
@@ -63,7 +77,10 @@ public class BlockingLongSupplier implements LongSupplier, IMonitor {
      */
     synchronized void onError(Throwable t) {
         LOG.error(t.getMessage());
-        error = t;
-        Thread.currentThread().interrupt(); // interrupt the waiting thread.
+        this.error = t;
+        doNotifyAll();
+        while (entries > 0) {
+            doWait();
+        }
     }
 }

@@ -23,29 +23,31 @@ class SumServiceTest {
 
         SumService ss = new SumService();
 
-        int totalConcurrentClients = 100;
-        long expectedSum = 0;
-        List<Future<Long>> futures = new ArrayList<>();
-        for (int i = 0; i < totalConcurrentClients; i++) {
-            int finalI = i;
-            expectedSum += finalI;
-            futures.add(executor.submit(() -> ss.doAdd(finalI)));
-        }
-
-        futures.add(executor.submit(() -> {
-            try {
-                Thread.sleep(1000);
-                long actualSum = ss.doEnd();
-                LOG.info("[TEST] awaited, actualSum={}", actualSum);
-                return actualSum;
-            } catch (Exception e) {
-                LOG.error(e.getMessage());
-                throw new RuntimeException(e);
+        for (int k = 0; k < 10; k++) {
+            int totalConcurrentClients = 100;
+            long expectedSum = 0;
+            List<Future<Long>> futures = new ArrayList<>();
+            for (int i = 0; i < totalConcurrentClients; i++) {
+                int finalI = i;
+                expectedSum += finalI;
+                futures.add(executor.submit(() -> ss.doAdd(finalI)));
             }
-        }));
 
-        for (Future<Long> future : futures) {
-            assertEquals(expectedSum, future.get());
+            futures.add(executor.submit(() -> {
+                try {
+                    Thread.sleep(1000);
+                    long actualSum = ss.doEnd();
+                    LOG.info("[TEST] awaited, actualSum={}", actualSum);
+                    return actualSum;
+                } catch (Exception e) {
+                    LOG.error(e.getMessage());
+                    throw new RuntimeException(e);
+                }
+            }));
+
+            for (Future<Long> future : futures) {
+                assertEquals(expectedSum, future.get());
+            }
         }
 
         executor.shutdown();

@@ -7,10 +7,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.spy;
 
 class BlockingLongSupplierTest {
 
@@ -111,6 +110,24 @@ class BlockingLongSupplierTest {
         }
     }
 
+    @Test
+    void testReuseOnComplete() throws InterruptedException, ExecutionException {
+        ExecutorService executor = Executors.newFixedThreadPool(1);
+
+        BlockingLongSupplier supplier = new BlockingLongSupplier();
+
+        Future<Long> actualFuture;
+        long expectedValue = 10;
+
+        actualFuture = executor.submit(supplier::getAsLong);
+        supplier.onComplete(expectedValue);
+        assertEquals(expectedValue, actualFuture.get());
+
+        actualFuture = executor.submit(supplier::getAsLong);
+        supplier.onComplete(expectedValue);
+        assertEquals(expectedValue, actualFuture.get());
+    }
+
     /**
      * Creates a fine grained {@link BlockingLongSupplier} that allows a custom runnable (i.e. <tt>onWait</tt>) to be
      * executed when the {@link BlockingLongSupplier#doWait()} method is called.
@@ -119,15 +136,13 @@ class BlockingLongSupplierTest {
      * @return the {@link BlockingLongSupplier} as a spy.
      */
     private BlockingLongSupplier blockingLongSupplier(Runnable onWait) {
-        BlockingLongSupplier supplier = spy(new BlockingLongSupplier());
-        doAnswer(inv -> {
-            synchronized (supplier) {
+        return new BlockingLongSupplier() {
+            @Override
+            public synchronized void doWait() {
                 onWait.run();
-                supplier.wait();
+                super.doWait();
             }
-            return null;
-        }).when(supplier).doWait();
-        return supplier;
+        };
     }
 
 }
