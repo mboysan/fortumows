@@ -18,39 +18,36 @@ class SumServiceTest {
     private static final Logger LOG = LoggerFactory.getLogger(SumServiceTest.class);
 
     @Test
-    void testAll() throws ExecutionException, InterruptedException {
-        // TODO: fix tests
+    void testRegularWorkflow() throws ExecutionException, InterruptedException {
+        ExecutorService executor = Executors.newCachedThreadPool();
 
         SumService ss = new SumService();
 
-        ExecutorService executor = Executors.newCachedThreadPool();
-
-        long totalExpected = 0;
+        int totalConcurrentClients = 100;
+        long expectedSum = 0;
         List<Future<Long>> futures = new ArrayList<>();
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < totalConcurrentClients; i++) {
             int finalI = i;
-            totalExpected += finalI;
-            futures.add(executor.submit(() -> {
-                Long workerSum = ss.doAdd(finalI);
-                LOG.info("workerSum={}", workerSum);
-                return workerSum;
-            }));
+            expectedSum += finalI;
+            futures.add(executor.submit(() -> ss.doAdd(finalI)));
         }
-        executor.execute(() -> {
+
+        futures.add(executor.submit(() -> {
             try {
                 Thread.sleep(1000);
-                Long actualSum = ss.doEnd();
-                LOG.info("awaited, actualSum={}", actualSum);
+                long actualSum = ss.doEnd();
+                LOG.info("[TEST] awaited, actualSum={}", actualSum);
+                return actualSum;
             } catch (Exception e) {
                 LOG.error(e.getMessage());
+                throw new RuntimeException(e);
             }
-        });
+        }));
 
         for (Future<Long> future : futures) {
-            assertEquals(totalExpected, future.get());
+            assertEquals(expectedSum, future.get());
         }
 
         executor.shutdown();
     }
-
 }

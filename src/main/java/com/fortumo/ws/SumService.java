@@ -33,16 +33,14 @@ class SumService {
      * @throws ServiceException in case there is any error wih the created {@link BlockingLongSupplier}.
      */
     long doAdd(long number) throws ServiceException {
-        BlockingLongSupplier supplier = null;
+        BlockingLongSupplier supplier = new BlockingLongSupplier();
         try {
-            supplier = addNewSupplier();
+            suppliers.put(supplier, new byte[0]);
             long currentSum = totalSum.addAndGet(number);
             LOG.info("added new supplier (currentSum={}), waiting...", currentSum);
             return supplier.getAsLong();    // blocks
         } catch (Exception e) {
-            if (supplier != null) {
-                callAndRemoveSupplier(supplier, s -> s.onError(e));
-            }
+            callAndRemoveSupplier(supplier, spl -> spl.onError(e));
             throw new ServiceException(e);
         }
     }
@@ -54,18 +52,8 @@ class SumService {
     long doEnd() throws ServiceException {
         long sum = totalSum.getAndSet(0);
         LOG.info("notifying suppliers with sum={}", sum);
-        callAndRemoveAllSuppliers(supplier -> supplier.onComplete(sum));   // notifies
+        callAndRemoveAllSuppliers(spl -> spl.onComplete(sum));   // notifies
         return sum;
-    }
-
-    /**
-     * Creates a new {@link BlockingLongSupplier} and adds it to {@link #suppliers}.
-     * @return the created {@link BlockingLongSupplier} object.
-     */
-    private BlockingLongSupplier addNewSupplier() {
-        BlockingLongSupplier supplier = new BlockingLongSupplier();
-        suppliers.put(supplier, new byte[0]);
-        return supplier;
     }
 
     /**
