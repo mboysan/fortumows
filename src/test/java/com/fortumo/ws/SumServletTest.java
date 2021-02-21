@@ -11,11 +11,21 @@ import java.util.function.Supplier;
 
 import static jakarta.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
 import static jakarta.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.*;
 
 class SumServletTest {
+
+    /**
+     * Tests {@link SumServlet#createService()} method returns non-null service.
+     */
+    @Test
+    void whenCreateService_thenNotNull() {
+        SumServlet servlet = new SumServlet();
+        assertNotNull(servlet.createService());
+    }
 
     /**
      * tests when request object is null then, an error is sent.

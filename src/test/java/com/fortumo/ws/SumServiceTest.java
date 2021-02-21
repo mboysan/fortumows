@@ -66,7 +66,8 @@ class SumServiceTest {
     }
 
     /**
-     * Tests service re-usability after {@link SumService#doEnd()} is called.
+     * Tests service re-usability after {@link SumService#doEnd()} is called. Also tests {@link IMonitor#doWait(long)}
+     * method to increase the coverage.
      */
     @Test
     void testReuseOnComplete() throws InterruptedException, ExecutionException {
@@ -80,12 +81,12 @@ class SumServiceTest {
         long expectedValue = 10;
 
         actualFuture = executor.submit(() -> service.doAdd(expectedValue));
-        monitor.doWait();
+        monitor.doWait(0);
         service.doEnd();
         assertEquals(expectedValue, actualFuture.get());
 
         actualFuture = executor.submit(() -> service.doAdd(expectedValue));
-        monitor.doWait();
+        monitor.doWait(0);
         service.doEnd();
         assertEquals(expectedValue, actualFuture.get());
 
