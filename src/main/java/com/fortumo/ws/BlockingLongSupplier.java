@@ -10,11 +10,13 @@ import java.util.function.LongSupplier;
  * {@link #onComplete(long)} or {@link #onError(Throwable)} methods are called.
  * This class is thread-safe.
  * <br><br>
- * <b>NB!</b> The object created from this class is not reusable. i.e. none of the methods provided in this class
- * should be called more than once. Although there are no checks made to cover such scenarios, it is the caller's
- * responsibility to comply with this contract.
+ * <b>NB!</b> The object created from this class is not reusable. i.e. after calling the {@link #onComplete(long)}
+ * method, the {@link #getAsLong()} will always return the same value supplied. The same is true for
+ * {@link #onError(Throwable)}, in which case, the {@link #getAsLong()} will always throw the supplied error.
+ * Although there are no checks made to cover such scenarios, it is the caller's responsibility to comply
+ * with this contract.
  */
-public class BlockingLongSupplier implements LongSupplier {
+public class BlockingLongSupplier implements LongSupplier, IMonitor {
 
     private static final Logger LOG = LoggerFactory.getLogger(BlockingLongSupplier.class);
 
@@ -40,11 +42,7 @@ public class BlockingLongSupplier implements LongSupplier {
             throw new RuntimeException("onError called before this method.", error);
         }
         while (value == null) {
-            try {
-                wait();
-            } catch (InterruptedException e) {
-                throw new RuntimeException("onError called while waiting.", e);
-            }
+            doWait();
         }
         return value;
     }
@@ -55,7 +53,7 @@ public class BlockingLongSupplier implements LongSupplier {
      */
     synchronized void onComplete(long value) {
         this.value = value;
-        notify();
+        doNotifyAll();
     }
 
     /**
