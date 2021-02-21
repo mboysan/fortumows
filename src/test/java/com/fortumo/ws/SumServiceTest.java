@@ -4,7 +4,11 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -15,7 +19,7 @@ class SumServiceTest {
      * Tests {@link SumService#doEnd()} method when 100 threads waiting for {@link SumService#doEnd()}.
      */
     @Test
-    void whenDoEnd_thenGetSumFromAllThreads() throws InterruptedException, ExecutionException {
+    void whenDoEndThenGetSumFromAllThreads() throws InterruptedException, ExecutionException {
         ExecutorService executor = Executors.newCachedThreadPool();
 
         int threadCount = 100;
@@ -49,7 +53,7 @@ class SumServiceTest {
      * to wait for another <tt>doEnd()</tt>.
      */
     @Test
-    void whenDoEndCalledBeforeDoAdd_thenGetValue() throws InterruptedException, ExecutionException {
+    void whenDoEndCalledBeforeDoAddThenGetValue() throws InterruptedException, ExecutionException {
         ExecutorService executor = Executors.newFixedThreadPool(1);
         CountDownLatch latch = new CountDownLatch(1);
 
@@ -97,16 +101,17 @@ class SumServiceTest {
      * We will have 3 waiting threads. One of them will fail while waiting. Others shall succeed.
      */
     @Test
-    void whenErrorOnWaitingThread_thenOthersNotAffected() throws InterruptedException {
+    void whenErrorOnWaitingThreadThenOthersNotAffected() throws InterruptedException {
         ExecutorService executor = Executors.newCachedThreadPool();
 
         int threadCount = 3;
         CountDownLatch latch = new CountDownLatch(threadCount);
         AtomicInteger index = new AtomicInteger(0);
+        UnsupportedOperationException expectedException = new UnsupportedOperationException();
         SumService service = service(() -> {
             latch.countDown();
             if (index.incrementAndGet() == 1) {
-                throw new RuntimeException("expected");
+                throw expectedException;
             }
         });
 
@@ -127,7 +132,7 @@ class SumServiceTest {
                 assertEquals(expectedValue, future.get());
             } catch (ExecutionException expected) {
                 actualErrCnt++;
-                assertEquals("expected", expected.getCause().getMessage());
+                assertEquals(expectedException, expected.getCause());
             }
         }
         assertEquals(1, actualErrCnt);  // we are expecting only 1 error to be thrown.
