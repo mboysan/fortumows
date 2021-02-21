@@ -46,7 +46,7 @@ class SumService {
     }
 
     /**
-     * Notifies all the waiting clients that the 'end' signal is received.
+     * Notifies all the waiting clients that the 'end' signal is received and then sets the {@link #totalSum} to zero.
      * @return the {@link #totalSum}.
      */
     long doEnd() throws ServiceException {
