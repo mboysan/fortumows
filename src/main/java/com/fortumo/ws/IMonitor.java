@@ -9,7 +9,7 @@ public interface IMonitor {
     /**
      * {@link #wait()} without timeout.
      */
-    default void doWait() {
+    default void doWait() throws InterruptedException {
         doWait(-1);
     }
 
@@ -17,7 +17,7 @@ public interface IMonitor {
      * {@link #wait()} with specified timeout.
      * @param timeoutMillis maximum time to wait in milliseconds. Ignored if less than zero.
      */
-    default void doWait(long timeoutMillis) {
+    default void doWait(long timeoutMillis) throws InterruptedException {
         synchronized (this) {
             try {
                 if (timeoutMillis < 0) {
@@ -27,7 +27,7 @@ public interface IMonitor {
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt(); // reset interrupt state
-                throw new RuntimeException("interrupted while waiting.", e);
+                throw e;
             }
         }
     }

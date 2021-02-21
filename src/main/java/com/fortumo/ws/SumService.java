@@ -33,8 +33,9 @@ class SumService implements IMonitor {
      * Adds the provided <tt>number</tt> to {@link #totalSum} and waits for {@link #doEnd()} call.
      * @param number the number to add.
      * @return the {@link #totalSum}.
+     * @throws InterruptedException if thread interrupted while waiting.
      */
-    synchronized long doAdd(long number) {
+    synchronized long doAdd(long number) throws InterruptedException {
         ++entries;
         try {
             totalSum += number;
@@ -54,17 +55,21 @@ class SumService implements IMonitor {
      * Notifies all the waiting clients that the 'end' signal is received and then sets the {@link #totalSum} to zero.
      * Also waits until all threads that called the {@link #doAdd(long)} exited first.
      * @return the {@link #totalSum}.
+     * @throws InterruptedException if thread interrupted while waiting.
      */
-    synchronized long doEnd() {
+    synchronized long doEnd() throws InterruptedException {
         long sum = totalSum;
         LOG.info("notifying all with sum={}", totalSum);
         roundComplete = true;
         doNotifyAll();
-        while (entries > 0) {
-            doWait();
+        try {
+            while (entries > 0) {
+                doWait();
+            }
+        } finally {
+            roundComplete = false;  // starting a new round.
+            totalSum = 0;
         }
-        roundComplete = false;  // starting a new round.
-        totalSum = 0;
         return sum;
     }
 }

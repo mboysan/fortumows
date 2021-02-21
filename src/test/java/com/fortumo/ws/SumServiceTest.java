@@ -151,7 +151,7 @@ class SumServiceTest {
     private SumService service(Runnable onWait) {
         return new SumService() {
             @Override
-            public synchronized void doWait() {
+            public synchronized void doWait() throws InterruptedException {
                 onWait.run();
                 super.doWait();
             }
