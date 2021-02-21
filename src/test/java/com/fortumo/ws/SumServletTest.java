@@ -7,27 +7,15 @@ import org.junit.jupiter.api.Test;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static jakarta.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
 import static jakarta.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.*;
 
 class SumServletTest {
-
-    /**
-     * We will be mocking the {@link SumServlet#createService()} method throughout the tests, but we need to make
-     * sure the servlet creates the appropriate service in reality.
-     */
-    @Test
-    void testServiceClassInstance() {
-        SumServlet servlet = new SumServlet();
-        assertTrue(servlet.createService() instanceof SumService);
-    }
 
     /**
      * tests when request object is null then, an error is sent.
@@ -65,6 +53,16 @@ class SumServletTest {
     void whenRequestBodyIsBlank_thenSendErrorCalled() throws IOException {
         HttpServletResponse respMock = response();
         servlet().doPost(request(() -> " "), respMock);
+        verifySendErrorCalled(respMock, SC_BAD_REQUEST);
+    }
+
+    /**
+     * tests when request body received is neither a number nor 'end' string, then an error is sent.
+     */
+    @Test
+    void whenRequestBodyIsNotNumberOrEnd_thenSendErrorCalled() throws IOException {
+        HttpServletResponse respMock = response();
+        servlet().doPost(request(() -> "some-arbitrary-string"), respMock);
         verifySendErrorCalled(respMock, SC_BAD_REQUEST);
     }
 
@@ -124,14 +122,19 @@ class SumServletTest {
     SumServlet servlet(Supplier<Throwable> serviceExceptionSupplier) {
         return new SumServlet() {
             @Override
-            Function<String, Long> createService() {
-                Function<String, Long> serviceMock = mock(Function.class);
-                if (serviceExceptionSupplier != null) {
-                    when(serviceMock.apply(anyString())).thenThrow(serviceExceptionSupplier.get());
-                } else {
-                    when(serviceMock.apply(anyString())).thenReturn(10L);
+            SumService createService() {
+                try {
+                    SumService serviceMock = mock(SumService.class);
+                    if (serviceExceptionSupplier != null) {
+                        when(serviceMock.doEnd()).thenThrow(serviceExceptionSupplier.get());
+                        when(serviceMock.doAdd(anyLong())).thenThrow(serviceExceptionSupplier.get());
+                    } else {
+                        when(serviceMock.doAdd(anyLong())).thenReturn(10L);
+                    }
+                    return serviceMock;
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
                 }
-                return serviceMock;
             }
         };
     }

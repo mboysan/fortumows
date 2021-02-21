@@ -31,7 +31,7 @@ class SumServiceTest {
             int finalI = i;
             totalExpected += finalI;
             futures.add(executor.submit(() -> {
-                Long workerSum = ss.apply(finalI + "");
+                Long workerSum = ss.doAdd(finalI);
                 LOG.info("workerSum={}", workerSum);
                 return workerSum;
             }));
@@ -39,7 +39,7 @@ class SumServiceTest {
         executor.execute(() -> {
             try {
                 Thread.sleep(1000);
-                Long actualSum = ss.apply("end");
+                Long actualSum = ss.doEnd();
                 LOG.info("awaited, actualSum={}", actualSum);
             } catch (Exception e) {
                 LOG.error(e.getMessage());

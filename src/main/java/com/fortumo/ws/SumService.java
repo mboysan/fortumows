@@ -4,18 +4,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 /**
- * The service that collects and sums up the numbers received from the clients and waits until one of the client sends
- * the 'end' signal. This service is represented as a {@link Function} in order to easily understand the class
- * signature, i.e. the expected type of request and the type of response it returns.
+ * The service that collects and sums up the numbers (handled by {@link #doAdd(long)}) received from the clients and
+ * waits until one of the client sends the 'end' signal (handled by {@link #doEnd()}).
  */
-class SumService implements Function<String, Long> {
+class SumService {
 
     private static final Logger LOG = LoggerFactory.getLogger(SumService.class);
 
@@ -29,38 +26,30 @@ class SumService implements Function<String, Long> {
      */
     private final Map<BlockingLongSupplier, byte[]> suppliers = new ConcurrentHashMap<>();
 
-    /**
-     * Processes the given <tt>request</tt> string. If the <tt>request</tt> is a number, the number will be added to
-     * the {@link #totalSum} and then will block until it receives the 'end' signal.
-     * @param request the request to process.
-     * @return the sum of all the numbers provided by separate requests.
-     * @throws NumberFormatException if the request cannot be parsed to a valid {@link Long}.
-     * @throws ServiceException in case of any unexpected exception.
-     */
-    @Override
-    public Long apply(String request) throws NumberFormatException, ServiceException {
-        Objects.requireNonNull(request, "request must not be null");
+    long doEnd() throws ServiceException {
         try {
-            if (request.equals("end")) {
-                long sum = totalSum.getAndSet(0);
-                LOG.info("notifying suppliers with sum={}", sum);
-                callAndRemoveSuppliers(supplier -> supplier.onComplete(sum));   // notifies
-                return sum;
-            } else {
-                long number = Long.parseLong(request);
-                BlockingLongSupplier supplier = addNewSupplier();
-                long currentSum = totalSum.addAndGet(number);
-                LOG.info("added new supplier (currentSum={}), waiting...", currentSum);
-                return supplier.getAsLong();    // blocks
-            }
-        } catch (NumberFormatException e) {
-            LOG.error(e.getMessage());
-            throw e;
+            long sum = totalSum.getAndSet(0);
+            LOG.info("notifying suppliers with sum={}", sum);
+            callAndRemoveAllSuppliers(supplier -> supplier.onComplete(sum));   // notifies
+            return sum;
         } catch (Exception e) {
-            LOG.error(e.getMessage());
-            callAndRemoveSuppliers(supplier -> supplier.onError(e));
+            callAndRemoveAllSuppliers(supplier -> supplier.onError(e));
             throw new ServiceException(e);
+        }
+    }
 
+    long doAdd(long number) throws ServiceException {
+        BlockingLongSupplier supplier = null;
+        try {
+            supplier = addNewSupplier();
+            long currentSum = totalSum.addAndGet(number);
+            LOG.info("added new supplier (currentSum={}), waiting...", currentSum);
+            return supplier.getAsLong();    // blocks
+        } catch (Exception e) {
+            if (supplier != null) {
+                callAndRemoveSupplier(supplier, s -> s.onError(e));
+            }
+            throw new ServiceException(e);
         }
     }
 
@@ -78,10 +67,19 @@ class SumService implements Function<String, Long> {
      * Calls the provided <tt>supplierFunction</tt> for all the {@link #suppliers} and removes them.
      * @param supplierFunction the method of the {@link BlockingLongSupplier} to call.
      */
-    private void callAndRemoveSuppliers(Consumer<BlockingLongSupplier> supplierFunction) {
+    private void callAndRemoveAllSuppliers(Consumer<BlockingLongSupplier> supplierFunction) {
         for (BlockingLongSupplier supplier : suppliers.keySet()) {
-            supplierFunction.accept(supplier);
-            suppliers.remove(supplier);
+            callAndRemoveSupplier(supplier, supplierFunction);
         }
+    }
+
+    /**
+     * Calls the provided <tt>supplierFunction</tt> only for the provided <tt>supplier</tt> and removes it from the
+     * {@link #suppliers}.
+     * @param supplierFunction the method of the {@link BlockingLongSupplier} to call.
+     */
+    private void callAndRemoveSupplier(BlockingLongSupplier supplier, Consumer<BlockingLongSupplier> supplierFunction) {
+        supplierFunction.accept(supplier);
+        suppliers.remove(supplier);
     }
 }
