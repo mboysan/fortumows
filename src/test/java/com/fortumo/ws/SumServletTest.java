@@ -107,7 +107,7 @@ class SumServletTest {
     }
 
     /**
-     * Creates the {@link SumServlet} to test. A service is injected that returns an arbitrary number when its apply
+     * Creates the {@link SumServlet} to test. A service is injected that returns an arbitrary number when its doAdd
      * method is called.
      * @return the servlet to test.
      */
@@ -126,7 +126,6 @@ class SumServletTest {
                 try {
                     SumService serviceMock = mock(SumService.class);
                     if (serviceExceptionSupplier != null) {
-                        when(serviceMock.doEnd()).thenThrow(serviceExceptionSupplier.get());
                         when(serviceMock.doAdd(anyLong())).thenThrow(serviceExceptionSupplier.get());
                     } else {
                         when(serviceMock.doAdd(anyLong())).thenReturn(10L);

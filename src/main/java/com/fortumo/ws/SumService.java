@@ -26,18 +26,12 @@ class SumService {
      */
     private final Map<BlockingLongSupplier, byte[]> suppliers = new ConcurrentHashMap<>();
 
-    long doEnd() throws ServiceException {
-        try {
-            long sum = totalSum.getAndSet(0);
-            LOG.info("notifying suppliers with sum={}", sum);
-            callAndRemoveAllSuppliers(supplier -> supplier.onComplete(sum));   // notifies
-            return sum;
-        } catch (Exception e) {
-            callAndRemoveAllSuppliers(supplier -> supplier.onError(e));
-            throw new ServiceException(e);
-        }
-    }
-
+    /**
+     * Adds the provided <tt>number</tt> to {@link #totalSum} and waits for {@link #doEnd()} call.
+     * @param number the number to add.
+     * @return the {@link #totalSum}.
+     * @throws ServiceException in case there is any error wih the created {@link BlockingLongSupplier}.
+     */
     long doAdd(long number) throws ServiceException {
         BlockingLongSupplier supplier = null;
         try {
@@ -51,6 +45,17 @@ class SumService {
             }
             throw new ServiceException(e);
         }
+    }
+
+    /**
+     * Notifies all the waiting clients that the 'end' signal is received.
+     * @return the {@link #totalSum}.
+     */
+    long doEnd() throws ServiceException {
+        long sum = totalSum.getAndSet(0);
+        LOG.info("notifying suppliers with sum={}", sum);
+        callAndRemoveAllSuppliers(supplier -> supplier.onComplete(sum));   // notifies
+        return sum;
     }
 
     /**
@@ -79,7 +84,12 @@ class SumService {
      * @param supplierFunction the method of the {@link BlockingLongSupplier} to call.
      */
     private void callAndRemoveSupplier(BlockingLongSupplier supplier, Consumer<BlockingLongSupplier> supplierFunction) {
-        supplierFunction.accept(supplier);
-        suppliers.remove(supplier);
+        try {
+            supplierFunction.accept(supplier);
+        } catch (Exception e) {
+            LOG.error(e.getMessage());
+        } finally {
+            suppliers.remove(supplier);
+        }
     }
 }
