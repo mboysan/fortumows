@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.text.DecimalFormat;
 
 import static jakarta.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
 import static jakarta.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
@@ -20,6 +21,11 @@ import static jakarta.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 public class SumServlet extends HttpServlet {
 
     private static final Logger LOG = LoggerFactory.getLogger(SumServlet.class);
+
+    /**
+     * Formats the value so that the decimal places are ignored if the value is an integer or long.
+     */
+    private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.###");
 
     /**
      * The service that processes the received requests.
@@ -40,7 +46,8 @@ public class SumServlet extends HttpServlet {
 
     /**
      * Handles the POST:/ request with body containing a number or the string 'end'. After validating the request body,
-     * it is sent to the {@link #service} for processing.
+     * it is sent to the {@link #service} for processing. Note that the end result is formatted using the
+     * {@link #DECIMAL_FORMAT}.
      *
      * @param req request object to receive the client's request.
      * @param resp response object to send response.
@@ -52,16 +59,16 @@ public class SumServlet extends HttpServlet {
             String body = req.getReader().readLine();
             LOG.info("recv request={}", body);
             validate(body);
-            long result;
+            double result;
             if (body.equals("end")) {
                 result = service.doEnd();
             } else {
-                long number = Long.parseLong(body);
+                double number = Double.parseDouble(body);
                 result = service.doAdd(number);
             }
             resp.setStatus(200);
             resp.setContentType("text/plain;charset=UTF-8");
-            resp.getOutputStream().println(result);
+            resp.getOutputStream().println(DECIMAL_FORMAT.format(result));
         } catch (IllegalArgumentException e) {
             LOG.error(e.getMessage());
             resp.sendError(SC_BAD_REQUEST, "request may only contain string 'end' or number");
