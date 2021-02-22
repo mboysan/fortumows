@@ -58,3 +58,4 @@ This is a more involved process, but the servlet deployment can be summarized wi
 # TODO:
 - dockerize
 - inspect log configuration
+- add integration tests
