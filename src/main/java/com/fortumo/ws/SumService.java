@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The service that collects and sums up the numbers (handled by {@link #doAdd(long)}) received from the clients and
+ * The service that collects and sums up the numbers (handled by {@link #doAdd(double)}) received from the clients and
  * waits until one of the client sends the 'end' signal (handled by {@link #doEnd()}).
  * Note that, objects created from this class are re-usable. This class is thread-safe.
  */
@@ -15,16 +15,16 @@ class SumService implements IMonitor {
     /**
      * The sum of all the numbers received from the clients.
      */
-    private long totalSum = 0;
+    private double totalSum = 0;
 
     /**
-     * the number of threads that called the {@link #doAdd(long)} method.
+     * the number of threads that called the {@link #doAdd(double)} method.
      */
     private int entries = 0;
 
     /**
-     * A round is defined as all the {@link #doAdd(long)} calls before a thread calls the {@link #doEnd()}.
-     * If false, then a round is currently active and any thread that called the {@link #doAdd(long)} has to
+     * A round is defined as all the {@link #doAdd(double)} calls before a thread calls the {@link #doEnd()}.
+     * If false, then a round is currently active and any thread that called the {@link #doAdd(double)} has to
      * wait for notification. This variable is used to protect against spurious wake-ups.
      */
     private boolean roundComplete = false;
@@ -35,7 +35,7 @@ class SumService implements IMonitor {
      * @return the {@link #totalSum}.
      * @throws InterruptedException if thread interrupted while waiting.
      */
-    synchronized long doAdd(long number) throws InterruptedException {
+    synchronized double doAdd(double number) throws InterruptedException {
         ++entries;
         try {
             totalSum += number;
@@ -53,12 +53,12 @@ class SumService implements IMonitor {
 
     /**
      * Notifies all the waiting clients that the 'end' signal is received and then sets the {@link #totalSum} to zero.
-     * Also waits until all threads that called the {@link #doAdd(long)} exited first.
+     * Also waits until all threads that called the {@link #doAdd(double)} exited first.
      * @return the {@link #totalSum}.
      * @throws InterruptedException if thread interrupted while waiting.
      */
-    synchronized long doEnd() throws InterruptedException {
-        long sum = totalSum;
+    synchronized double doEnd() throws InterruptedException {
+        double sum = totalSum;
         LOG.info("notifying all with sum={}", totalSum);
         roundComplete = true;
         doNotifyAll();

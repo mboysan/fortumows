@@ -13,8 +13,8 @@ import static jakarta.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
 import static jakarta.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Matchers.anyDouble;
 import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doNothing;
@@ -132,9 +132,9 @@ class SumServletTest {
                 try {
                     SumService serviceMock = mock(SumService.class);
                     if (serviceExceptionSupplier != null) {
-                        when(serviceMock.doAdd(anyLong())).thenThrow(serviceExceptionSupplier.get());
+                        when(serviceMock.doAdd(anyDouble())).thenThrow(serviceExceptionSupplier.get());
                     } else {
-                        when(serviceMock.doAdd(anyLong())).thenReturn(10L);
+                        when(serviceMock.doAdd(anyDouble())).thenReturn(10.0);
                     }
                     return serviceMock;
                 } catch (Exception e) {
@@ -166,7 +166,7 @@ class SumServletTest {
      */
     private HttpServletResponse response() throws IOException {
         ServletOutputStream osMock = mock(ServletOutputStream.class);
-        doNothing().when(osMock).println(anyLong());
+        doNothing().when(osMock).println(anyString());
         HttpServletResponse respMock = mock(HttpServletResponse.class);
         when(respMock.getOutputStream()).thenReturn(osMock);
         return respMock;
@@ -179,8 +179,7 @@ class SumServletTest {
     private void verifySuccessResponse(HttpServletResponse respMock) throws IOException {
         verify(respMock).setStatus(200);
         verify(respMock).setContentType(anyString());
-        verify(respMock).getOutputStream();
-        verify(respMock.getOutputStream()).println(anyLong());
+        verify(respMock.getOutputStream()).println(anyString());
     }
 
     private void verifySendErrorCalled(HttpServletResponse respMock) throws IOException {

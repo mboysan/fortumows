@@ -27,9 +27,9 @@ class SumServiceTest {
 
         SumService service = service(latch::countDown);
 
-        long expectedValue = 0;
+        double expectedValue = 0;
 
-        List<Future<Long>> futures = new ArrayList<>();
+        List<Future<Double>> futures = new ArrayList<>();
         for (int i = 0; i < threadCount; i++) {
             int fi = i;
             expectedValue += fi;
@@ -38,9 +38,9 @@ class SumServiceTest {
 
         latch.await();
 
-        long actualValue = service.doEnd();
+        double actualValue = service.doEnd();
         assertEquals(expectedValue, actualValue);
-        for (Future<Long> future : futures) {
+        for (Future<Double> future : futures) {
             assertEquals(expectedValue, future.get());
         }
 
@@ -48,7 +48,7 @@ class SumServiceTest {
     }
 
     /**
-     * Tests {@link SumService#doEnd()} is called before {@link SumService#doAdd(long)},
+     * Tests {@link SumService#doEnd()} is called before {@link SumService#doAdd(double)},
      * in which case, the <tt>doEnd()</tt> method will return immediately with zero and <tt>doAdd()</tt> will have
      * to wait for another <tt>doEnd()</tt>.
      */
@@ -60,8 +60,8 @@ class SumServiceTest {
         SumService service = service(latch::countDown);
         assertEquals(0, service.doEnd());
 
-        long expectedValue = 10;
-        Future<Long> actualFuture = executor.submit(() -> service.doAdd(expectedValue));
+        double expectedValue = 10;
+        Future<Double> actualFuture = executor.submit(() -> service.doAdd(expectedValue));
         latch.await();
         assertEquals(expectedValue, service.doEnd());
         assertEquals(expectedValue, actualFuture.get());
@@ -81,8 +81,8 @@ class SumServiceTest {
         };
         SumService service = service(monitor::doNotify);
 
-        Future<Long> actualFuture;
-        long expectedValue = 10;
+        Future<Double> actualFuture;
+        double expectedValue = 10;
 
         actualFuture = executor.submit(() -> service.doAdd(expectedValue));
         monitor.doWait(0);
@@ -115,9 +115,9 @@ class SumServiceTest {
             }
         });
 
-        List<Future<Long>> futures = new ArrayList<>();
-        long numberToAdd = 10;
-        long expectedValue = 0;
+        List<Future<Double>> futures = new ArrayList<>();
+        double numberToAdd = 10;
+        double expectedValue = 0;
         for (int i = 0; i < threadCount; i++) {
             expectedValue += numberToAdd;
             futures.add(executor.submit(() -> service.doAdd(numberToAdd)));
@@ -126,8 +126,8 @@ class SumServiceTest {
         latch.await();
         assertEquals(expectedValue, service.doEnd());
 
-        long actualErrCnt = 0;
-        for (Future<Long> future : futures) {
+        double actualErrCnt = 0;
+        for (Future<Double> future : futures) {
             try {
                 assertEquals(expectedValue, future.get());
             } catch (ExecutionException expected) {
